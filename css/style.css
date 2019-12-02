@@ -30,8 +30,9 @@ pre {
   padding: 15px;
   margin: 10px;
   border: 1px solid #cdaa7d33;
+  overflow-x: auto;
+  white-space: pre-wrap;
   word-wrap: break-word;
-  display: block;
 }
 
 ul {
@@ -58,6 +59,7 @@ li {
 .fail {
   color: red;
 }
+
 .flex-center {
   display: flex;
   justify-content: center;
