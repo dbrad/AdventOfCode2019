@@ -24,17 +24,22 @@ body {
 
 pre {
   color: rgb(187, 155, 116);
-  max-width: 450px;
   font-size: 12px;
   font-family: VictorMono;
   background: #161616;
   padding: 15px;
   margin: 10px;
   border: 1px solid #cdaa7d33;
+  word-wrap: break-word;
+  display: block;
 }
 
 ul {
   list-style: none;
+}
+
+li {
+  margin-bottom: 30px;
 }
 
 .centered {
