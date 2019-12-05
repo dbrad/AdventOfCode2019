@@ -68,3 +68,30 @@ li {
 .pass {
   color: green;
 }
+
+.console-container {
+  font-size: 10px;
+  border: 1px solid black;
+  background: #2d2d2d;
+  color: white;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.console-output {
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.console-input {
+  font-size: 10px;
+  font-family: "Victor Mono";
+  background: #2d2d2d;
+  color: white;
+  border: none;
+}
