@@ -3,6 +3,10 @@
   src: url("VictorMono-Regular.woff");
 }
 
+* {
+  box-sizing: border-box;
+}
+
 a {
   color: rgb(240, 248, 255);
   text-decoration: none;
@@ -22,17 +26,47 @@ body {
   font-size: 13px;
 }
 
+.collapser {
+  display:block;
+  width: 100%;
+  padding: 15px;
+  margin: 0px;
+  border: none;
+  background: #161616;
+  color: rgb(187, 155, 116);
+  border: 1px solid #cdaa7d33;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collapser:after {
+  content: '\02795'; /* Unicode character for "plus" sign (+) */
+  font-size: 13px;
+  color: white;
+  float: right;
+  margin-left: 5px;
+}
+.collapser.active:after {
+  content: "\2796"; /* Unicode character for "minus" sign (-) */
+}
+
 pre {
+  max-height: 0;
+  box-sizing: border-box;
   color: rgb(187, 155, 116);
   font-size: 12px;
   font-family: VictorMono;
   background: #161616;
-  padding: 15px;
-  margin: 10px;
+  padding: 0px 15px;
+  margin: 0px;
+  margin-bottom: 10px;
   border: 1px solid #cdaa7d33;
+  border-top: none;
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: pre-wrap;
   word-wrap: break-word;
+  transition: padding 0.2s ease-out, max-height 0.2s ease-in-out;
 }
 
 ul {

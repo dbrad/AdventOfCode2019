@@ -8,10 +8,12 @@ window.addEventListener("load", async () => {
 
   write(`<h2>Part 01</h2>`);
   await printFile("part01.js");
-  partOne.main(input);
-  write(`Result => `);
+  await partOne.tests();
+  write(`Result => ${JSON.stringify(await partOne.main(input), undefined, 1)}`);
 
   write(`<h2>Part 02</h2>`);
   await printFile("part02.js");
-  write(`Result => `);
+  await printFile("part02_tests.js");
+  await partTwo.tests();
+  write(`Result => ${JSON.stringify(await partTwo.main(input), undefined, 1)}`);
 });

@@ -1,14 +1,25 @@
 import { append } from "../lib/util.js";
-const ParameterModes = {
+
+const parameterModes = {
   POSITION: 0,
-  IMMEDIATE: 1,
+  IMMEDIATE: 1
 };
 
-export class intcodeConsole {
+const computerMode = {
+  BACKGROUND: 0,
+  INTERACTIVE: 1
+};
+
+export class intcode {
   constructor() {
     this.acceptingInput = false;
     this.inputBuffer = [];
+    this.outputBuffer = [];
+    this.mode = computerMode.BACKGROUND;
+  }
 
+  interactiveMode() {
+    this.mode = computerMode.INTERACTIVE;
     this.container = document.createElement("div");
     this.container.classList.add("console-container");
 
@@ -27,12 +38,14 @@ export class intcodeConsole {
     this.container.addEventListener("click", () => {
       this.input.focus();
     });
+
     this.input.addEventListener("keydown", e => {
       if (!this.acceptingInput) {
         e.preventDefault();
         return false;
       }
     });
+
     this.input.addEventListener("keyup", e => {
       if (e.keyCode === 13) {
         e.preventDefault();
@@ -46,99 +59,143 @@ export class intcodeConsole {
     this.out("Waiting for program...");
     this.input.placeholder = "processing...";
   }
+
   load(program) {
     this.memory = [...program];
-    this.out("Program loaded.");
+    if (this.mode === computerMode.INTERACTIVE) {
+      this.out("Program loaded.");
+    }
   }
 
-  add(a, b, out) {
-    const param01 = a.mode === ParameterModes.POSITION ? this.memory[a.value] : a.value;
-    const param02 = b.mode === ParameterModes.POSITION ? this.memory[b.value] : b.value;
-    this.memory[out] = param01 + param02;
+  out(message) {
+    this.outputBuffer.push(message);
+    if (this.mode === computerMode.INTERACTIVE) {
+      const newLine = document.createElement("span");
+      newLine.innerHTML = "" + message;
+      this.output.appendChild(newLine);
+      this.output.scrollTop = this.output.scrollHeight;
+    }
   }
 
-  mul(a, b, out) {
-    const param01 = a.mode === ParameterModes.POSITION ? this.memory[a.value] : a.value;
-    const param02 = b.mode === ParameterModes.POSITION ? this.memory[b.value] : b.value;
-    this.memory[out] = param01 * param02;
+  async in() {
+    if (this.mode === computerMode.INTERACTIVE) {
+      this.acceptingInput = true;
+      this.input.placeholder = "";
+    }
+    return new Promise(resolve => {
+      const handle = window.setInterval(() => {
+        if (this.inputBuffer.length === 0) {
+          return;
+        }
+        if (this.mode === computerMode.INTERACTIVE) {
+          this.input.placeholder = "processing...";
+          this.acceptingInput = false;
+        }
+        const value = this.inputBuffer.shift();
+        window.clearInterval(handle);
+        resolve(value);
+      }, 5);
+    });
   }
 
-  async run(debug = false) {
-    this.debug = debug;
-    this.out("Running program...");
+  async run() {
+    const parseParam = (mode, val) => {
+      return mode === parameterModes.POSITION ? this.memory[val] : val;
+    };
+    if (this.mode === computerMode.INTERACTIVE) {
+      this.out("Running program...");
+    }
     let running = true;
     let ptr = 0;
+
     while (running) {
       const cmd = ("" + this.memory[ptr])
         .split("")
         .map(val => parseInt(val, 10))
         .reverse();
       const op = cmd[0] + (cmd[1] || 0) * 10;
-      const paramModes = [cmd[2] || 0, cmd[3] || 0, cmd[4] || 0];
+      const pMode = [cmd[2] || 0, cmd[3] || 0, cmd[4] || 0];
+      const p = [this.memory[ptr + 1], this.memory[ptr + 2], this.memory[ptr + 3]];
 
       if (op === 1) {
-        const a = { mode: paramModes[0], value: this.memory[ptr + 1] };
-        const b = { mode: paramModes[1], value: this.memory[ptr + 1] };
-        const out = this.memory[ptr + 3];
-        this.add(a, b, out);
+        // ADD
+        const a = parseParam(pMode[0], p[0]);
+        const b = parseParam(pMode[1], p[1]);
+        this.memory[p[2]] = a + b;
         ptr += 4;
       } else if (op === 2) {
-        const a = { mode: paramModes[0], value: this.memory[ptr + 1] };
-        const b = { mode: paramModes[1], value: this.memory[ptr + 1] };
-        const out = this.memory[ptr + 3];
-        this.mul(a, b, out);
+        // MULTIPLY
+        const a = parseParam(pMode[0], p[0]);
+        const b = parseParam(pMode[1], p[1]);
+        this.memory[p[2]] = a * b;
         ptr += 4;
       } else if (op === 3) {
-        const addr = this.memory[ptr + 1];
+        // IN
         const value = await this.in();
-        this.memory[addr] = parseInt(value, 10);
+        this.memory[p[0]] = parseInt(value, 10);
         ptr += 2;
       } else if (op === 4) {
-        if (debug) {
-          this.out(`${this.memory[ptr]} (${this.memory[ptr + 1]})`);
-        }
-        const param = paramModes[0] === 0 ? this.memory[this.memory[ptr + 1]] : this.memory[ptr + 1];
-        this.out(param);
+        // OUT
+        const value = parseParam(pMode[0], p[0]);
+        this.out(value);
         ptr += 2;
+      } else if (op === 5) {
+        // JUMP-IF-TRUE
+        const condition = parseParam(pMode[0], p[0]);
+        const target = parseParam(pMode[1], p[1]);
+        if (condition !== 0) {
+          ptr = target;
+        } else {
+          ptr += 3;
+        }
+      } else if (op === 6) {
+        // JUMP-IF-FALSE
+        const condition = parseParam(pMode[0], p[0]);
+        const target = parseParam(pMode[1], p[1]);
+        if (condition === 0) {
+          ptr = target;
+        } else {
+          ptr += 3;
+        }
+      } else if (op === 7) {
+        // LESS THAN
+        const a = parseParam(pMode[0], p[0]);
+        const b = parseParam(pMode[1], p[1]);
+        if (a < b) {
+          this.memory[p[2]] = 1;
+        } else {
+          this.memory[p[2]] = 0;
+        }
+        ptr += 4;
+      } else if (op === 8) {
+        // EQUALS
+        const a = parseParam(pMode[0], p[0]);
+        const b = parseParam(pMode[1], p[1]);
+        if (a === b) {
+          this.memory[p[2]] = 1;
+        } else {
+          this.memory[p[2]] = 0;
+        }
+        ptr += 4;
       } else if (op === 99) {
-        this.out("Program halted.");
+        // HALT
+        if (this.mode === computerMode.INTERACTIVE) {
+          this.out("Program halted.");
+        }
         running = false;
         break;
       } else {
-        this.out(`Unexpected op code. (${op}) [${ptr}][${JSON.stringify(this.memory[ptr], undefined, 2)}]`);
+        this.out(`Unexpected op code: ${op}`);
+        this.out(` cmd => ${JSON.stringify(cmd, undefined)}`);
+        this.out(` param => ${JSON.stringify(params, undefined)}`);
         running = false;
         break;
       }
-      if (debug) {
-        this.out(` --- `);
-      }
     }
-    this.input.placeholder = "";
-    this.input.disabled = true;
-    this.input.blur();
-  }
-
-  out(message) {
-    const newLine = document.createElement("span");
-    newLine.innerHTML = "" + message;
-    this.output.appendChild(newLine);
-    this.output.scrollTop = this.output.scrollHeight;
-  }
-
-  async in() {
-    this.acceptingInput = true;
-    this.input.placeholder = "";
-    return new Promise((resolve, reject) => {
-      const handle = window.setInterval(() => {
-        if (this.inputBuffer.length === 0) {
-          return;
-        }
-        this.input.placeholder = "processing...";
-        this.acceptingInput = false;
-        const value = this.inputBuffer.shift();
-        window.clearInterval(handle);
-        resolve(value);
-      }, 5);
-    });
+    if (this.mode === computerMode.INTERACTIVE) {
+      this.input.placeholder = "";
+      this.input.disabled = true;
+      this.input.blur();
+    }
   }
 }
