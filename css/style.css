@@ -27,7 +27,7 @@ body {
 }
 
 .collapser {
-  display:block;
+  display: block;
   width: 100%;
   padding: 15px;
   margin: 0px;
@@ -40,7 +40,7 @@ body {
 }
 
 .collapser:after {
-  content: '\02795'; /* Unicode character for "plus" sign (+) */
+  content: "\02795"; /* Unicode character for "plus" sign (+) */
   font-size: 13px;
   color: white;
   float: right;
@@ -67,6 +67,30 @@ pre {
   white-space: pre-wrap;
   word-wrap: break-word;
   transition: padding 0.2s ease-out, max-height 0.2s ease-in-out;
+}
+
+canvas {
+  transform-origin: 0 0;
+  user-select: none;
+}
+
+canvas,
+img {
+  padding: 0;
+  margin: 0;
+  image-rendering: optimizeSpeed;
+  /* Older versions of FF          */
+  image-rendering: -moz-crisp-edges;
+  /* FF 6.0+                       */
+  image-rendering: -webkit-optimize-contrast;
+  /* Safari                        */
+  image-rendering: -o-crisp-edges;
+  /* OS X & Windows Opera (12.02+) */
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  /* Awesome future-browsers       */
+  -ms-interpolation-mode: nearest-neighbor;
+  /* IE                            */
 }
 
 ul {

@@ -12,12 +12,13 @@ window.addEventListener("load", async () => {
   write(`Computing Part 01...`);
   const startp1 = performance.now();
   write(`Result => ${await partOne.main(input)}`);
-  write(`${performance.now() - startp1}ms`)
+  write(`${performance.now() - startp1}ms`);
 
   write(`<h2>Part 02</h2>`);
   await printFile("part02.js");
   await partTwo.tests();
+  write(`Computing Part 02...`);
   const startp2 = performance.now();
   write(`Result => ${await partTwo.main(input)}`);
-  write(`${performance.now() - startp2}ms`)
+  write(`${performance.now() - startp2}ms`);
 });
