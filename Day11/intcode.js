@@ -3,21 +3,22 @@ import { append } from "../lib/util.js";
 const parameterModes = {
   POSITION: 0,
   IMMEDIATE: 1,
-  RELATIVE: 2
+  RELATIVE: 2,
 };
 
 const computerMode = {
   HALTED: -1,
   BACKGROUND: 0,
-  INTERACTIVE: 1
+  INTERACTIVE: 1,
 };
 
 export class intcode {
-  constructor() {
+  constructor(outputCallback = null) {
     this.acceptingInput = false;
     this.inputBuffer = [];
     this.outputBuffer = [];
     this.mode = computerMode.BACKGROUND;
+    this.outputCallback = outputCallback;
   }
 
   interactiveMode() {
@@ -72,6 +73,9 @@ export class intcode {
   out(message, intOutput = false) {
     if (intOutput) {
       this.outputBuffer.push(message);
+      if (this.outputCallback) {
+        this.outputCallback(message);
+      }
     }
     if (this.mode === computerMode.INTERACTIVE) {
       const newLine = document.createElement("span");
@@ -101,7 +105,7 @@ export class intcode {
         }
         window.clearInterval(handle);
         resolve(value);
-      }, 5);
+      }, 0);
     });
   }
 
@@ -234,8 +238,6 @@ export class intcode {
     } catch (err) {
       if (this.mode === computerMode.INTERACTIVE) {
         this.out(err.message);
-        this.out(` cmd => ${JSON.stringify(cmd, undefined)}`);
-        this.out(` param => ${JSON.stringify(params, undefined)}`);
       } else {
         console.error(err.message);
       }

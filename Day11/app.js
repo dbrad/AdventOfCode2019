@@ -12,5 +12,5 @@ window.addEventListener("load", async () => {
 
   write(`<h2>Part 02</h2>`);
   await printFile("part02.js");
-  //write(`RESCURE COORDINATES => ${await partTwo.main(input)}`);
+  await partTwo.main(input);
 });

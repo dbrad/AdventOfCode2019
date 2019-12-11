@@ -2,73 +2,87 @@ import { intcode } from "./intcode.js";
 import { append } from "../lib/util.js";
 
 export async function main(program) {
-  const promises = [];
   const hull = [];
-  const position = { x: 100, y: 100 };
-  let maxY = 0;
+  const position = { x: 0, y: 0 };
+  const touched = new Set();
+  let minX = Number.MAX_SAFE_INTEGER;
+  let maxX = Number.MIN_SAFE_INTEGER;
+  let minY = Number.MAX_SAFE_INTEGER;
+  let maxY = Number.MIN_SAFE_INTEGER;
   let orientation = 0;
 
-  const brain = new intcode();
-  brain.load(program);
-  brain.inputBuffer.push(0);
+  const bodyOutput = [];
+  const body = message => {
+    bodyOutput.push(message);
+    if (bodyOutput.length == 2) {
+      let direction = bodyOutput.pop();
+      let colour = bodyOutput.pop();
 
-  const body = async () => {
-    const bodyInput = brain.outputBuffer;
-    return new Promise(resolve => {
-      window.setInterval(() => {
-        if (brain.mode === -1) {
-          return resolve();
-        }
+      // Paint the hull
+      if (!hull[position.x]) {
+        hull[position.x] = [];
+      }
+      hull[position.x][position.y] = colour;
+      touched.add(`${[position.x]}, ${[position.y]}`);
 
-        if (bodyInput.length >= 2 && bodyInput.length % 2 === 0) {
-          const direction = bodyInput.pop();
-          const colour = bodyInput.pop();
+      // Re-orient
+      if (direction === 0) {
+        orientation = (orientation + 3) % 4;
+      } else {
+        orientation = (orientation + 1) % 4;
+      }
 
-          // Paint the hull
-          if (!hull[position.x]) {
-            hull[position.x] = [];
-          }
-          hull[position.x][position.y] = colour;
+      // Move
+      switch (orientation) {
+        case 0:
+          position.y--;
+          break;
+        case 1:
+          position.x++;
+          break;
+        case 2:
+          position.y++;
+          break;
+        case 3:
+          position.x--;
+          break;
+      }
 
-          // Re-orient
-          if (direction === 0) {
-            orientation = (orientation + 3) % 4;
-          } else {
-            orientation = (orientation + 1) % 4;
-          }
+      if (position.x < minX) {
+        minX = position.x;
+      }
+      if (position.x > maxX) {
+        maxX = position.x;
+      }
+      if (position.y < minY) {
+        minY = position.y;
+      }
+      if (position.y > maxY) {
+        maxY = position.y;
+      }
 
-          // Move
-          switch (orientation) {
-            case 0:
-              position.y++;
-              break;
-            case 1:
-              position.x++;
-              break;
-            case 2:
-              position.y--;
-              break;
-            case 3:
-              position.x--;
-              break;
-          }
-          if (position.y > maxY) {
-            maxY = position.y;
-          }
-
-          // Input current panel colour back to brain
-          brain.inputBuffer.push(hull[position.x] ? hull[position.x][position.y] || 0 : 0);
-        }
-      }, 0);
-    });
+      // Input current panel colour back to brain
+      brain.inputBuffer.push(hull[position.x] ? hull[position.x][position.y] || 0 : 0);
+    }
   };
 
-  promises.push(body());
-  promises.push(brain.run());
-  await Promise.all(promises);
+  const brain = new intcode(body);
+  brain.load(program);
+  brain.inputBuffer.push(0);
+  await brain.run();
 
-  const w = hull.length;
-  const h = maxY;
+  const shiftedData = [];
+  for (let x in hull) {
+    for (let y in hull[x]) {
+      if (!shiftedData[+x - minX]) {
+        shiftedData[+x - minX] = [];
+      }
+      shiftedData[+x - minX][+y - minY] = hull[x][y];
+    }
+  }
+
+  const w = maxX - minX + 1;
+  const h = maxY - minY + 1;
   const $canvas = document.createElement("canvas");
   $canvas.width = w;
   $canvas.height = h;
@@ -76,7 +90,7 @@ export async function main(program) {
   const ctxImageData = ctx.createImageData(w, h);
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
-      const pixel = hull[x] ? hull[x][y] || 0 : 0;
+      const pixel = shiftedData[x] ? shiftedData[x][y] || 0 : 0;
       ctxImageData.data[x * 4 + y * 4 * w] = pixel * 255;
       ctxImageData.data[x * 4 + y * 4 * w + 1] = pixel * 255;
       ctxImageData.data[x * 4 + y * 4 * w + 2] = pixel * 255;
@@ -86,15 +100,5 @@ export async function main(program) {
   ctx.putImageData(ctxImageData, 0, 0);
   append($canvas);
 
-  let count = 0;
-  for (let x = 0; x < w; x++) {
-    for (let y = 0; y < h; y++) {
-      if (hull[x]) {
-        if (hull[x][y] === 0 || hull[x][y] === 1) {
-          count++;
-        }
-      }
-    }
-  }
-  return count;
+  return touched.size;
 }
