@@ -4,7 +4,7 @@ function parseMap(input) {
     const mapRow = input[y].split("");
     mapRow.forEach((node, x) => {
       if (node === "#") {
-        asteroids.push({ pos: { x, y }, angles: new Set() });
+        asteroids.push({ pos: { x, y }, angles: new Map() });
       }
     });
   }
@@ -17,19 +17,50 @@ function findBestAsteroid(input) {
     for (let j = i + 1; j < len; j++) {
       const A = asteroids[i];
       const B = asteroids[j];
-      const angle = (Math.atan2(A.pos.y - B.pos.y, A.pos.x - B.pos.x) * 180) / Math.PI;
-      A.angles.add(angle);
+
+      let angle = Math.atan2(B.pos.y - A.pos.y, B.pos.x - A.pos.x) * (180 / Math.PI) + 90;
+      if (angle < 0) {
+        angle += 360;
+      }
+      if (!A.angles.has(angle)) {
+        A.angles.set(angle, []);
+      }
+      A.angles.get(angle).push({ pos: B.pos, distance: Math.sqrt(Math.pow(B.pos.x - A.pos.x, 2) + Math.pow(B.pos.y - A.pos.y, 2)) });
+
       const reverseAngle = (angle + 180) % 360;
-      B.angles.add(reverseAngle);
+      if (!B.angles.has(reverseAngle)) {
+        B.angles.set(reverseAngle, []);
+      }
+      B.angles.get(reverseAngle).push({ pos: A.pos, distance: Math.sqrt(Math.pow(A.pos.x - B.pos.x, 2) + Math.pow(A.pos.y - B.pos.y, 2)) });
     }
   }
+
   asteroids.sort((a, b) => {
     return b.angles.size - a.angles.size;
   });
-  return asteroids[0].angles.size;
-  // GET BEST ASTEROID.
-  // GO THROUGH A LIST OF SORTED ANGLES WITH ASTEROIDS SORTED BY DISTANCE, REMOVE THE CLOSEST (ADD TO LIST?), MOVE ONTO THE NEXT ANGLE, REPEAT
-  // ONCE YOU HIT LENGTH OF 200, REPORT OUTCOME
+
+  const sortedAsteroids = Array.from(asteroids[0].angles).sort((a, b) => {
+    return a[0] - b[0];
+  });
+
+  sortedAsteroids.forEach(innerArray => {
+    innerArray[1].sort((a, b) => {
+      return b.distance - a.distance;
+    });
+  });
+
+  const destroyedAsteroids = [];
+  let index = 0;
+  while (destroyedAsteroids.length < 200) {
+    if (sortedAsteroids[index][1].length === 0) {
+      index = (index + 1) % (sortedAsteroids.length - 1);
+    }
+    const asteroid = sortedAsteroids[index][1].pop();
+    destroyedAsteroids.push(asteroid);
+    index = (index + 1) % (sortedAsteroids.length - 1);
+  }
+
+  return destroyedAsteroids[199].pos.x * 100 + destroyedAsteroids[199].pos.y;
 }
 
 export function main(input) {

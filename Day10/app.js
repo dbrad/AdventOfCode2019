@@ -11,6 +11,5 @@ window.addEventListener("load", async () => {
 
   write(`<h2>Part 02</h2>`);
   await printFile("part02.js");
-  // write("Decoded Password:");
-  // partTwo.main(input);
+  write(`Result => ${partTwo.main(input)}`);
 });
