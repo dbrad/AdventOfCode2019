@@ -5,7 +5,7 @@ const direction = {
   NORTH: 0,
   EAST: 1,
   SOUTH: 2,
-  WEST: 3,
+  WEST: 3
 };
 
 const tiles = {
@@ -15,7 +15,7 @@ const tiles = {
   ROBOT_N: "^",
   ROBOT_E: ">",
   ROBOT_S: "v",
-  ROBOT_W: "<",
+  ROBOT_W: "<"
 };
 
 const cameraFeed = [];
@@ -117,14 +117,13 @@ export async function main(program) {
       }
     }
   };
+  
   try {
     buildRoute();
   } catch (err) {
     console.error(err);
   } finally {
-    write(JSON.stringify(robotPos, undefined, 0));
-    write(JSON.stringify(robotDir, undefined, 0));
-    write(JSON.stringify(rawRoute, undefined, 0));
+    write(JSON.stringify(rawRoute, undefined, 1));
   }
   for (const row of cameraFeed) {
     write(row.join(""));
@@ -136,15 +135,44 @@ export async function main(program) {
   // C: ["L",6,"R",12,"R",12,"R",10]
   // MAIN: [A,B,A,C,B,C,A,B,A,C]
 
-  const asciiToInt = values => {
-    "".charCodeAt();
+  /**
+   * @param {string} ascii
+   */
+  const asciicodeToIntcode = ascii => {
+    const intcode = [];
+    for (const char of ascii) {
+      intcode.push(char.charCodeAt(0));
+    }
+    intcode.push(10);
+    return intcode;
   };
 
   const fnMain = "A,B,A,C,B,C,A,B,A,C";
   const fnA = "R,10,L,8,R,10,R,4";
   const fnB = "L,6,L,6,R,10";
   const fnC = "L,6,R,12,R,12,R,10";
-  // const navigator = new intcode();
-  // navigator.load(program);
-  // await navigator.run();
+  const feed = "n";
+
+  const i_fnMain = asciicodeToIntcode(fnMain);
+  const i_fnA = asciicodeToIntcode(fnA);
+  const i_fnB = asciicodeToIntcode(fnB);
+  const i_fnC = asciicodeToIntcode(fnC);
+  const i_feed = asciicodeToIntcode(feed);
+
+  write("M => " + i_fnMain.join(" "));
+  write("A => " + i_fnA.join(" "));
+  write("B => " + i_fnB.join(" "));
+  write("C => " + i_fnC.join(" "));
+
+  const navigator = new intcode();
+  navigator.load(program);
+  navigator.memory[0] = 2;
+  navigator.inputBuffer.push(...i_fnMain);
+  navigator.inputBuffer.push(...i_fnA);
+  navigator.inputBuffer.push(...i_fnB);
+  navigator.inputBuffer.push(...i_fnC);
+  navigator.inputBuffer.push(...i_feed);
+
+  await navigator.run();
+  return navigator.outputBuffer[navigator.outputBuffer.length - 1];
 }

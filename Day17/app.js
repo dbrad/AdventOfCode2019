@@ -8,9 +8,9 @@ window.addEventListener("load", async () => {
 
   write(`<h2>Part 01</h2>`);
   await printFile("part01.js");
-  write(`Block Count => ${await partOne.main(input)}`);
+  write(`Checksum => ${await partOne.main(input)}`);
 
   write(`<h2>Part 02</h2>`);
   await printFile("part02.js");
-  write(`Minutes to Re-Oxygenate => ${await partTwo.main(input)}`);
+  write(`Space Dust Picked Up => ${await partTwo.main(input)}`);
 });
